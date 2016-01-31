@@ -1,24 +1,26 @@
 "use strict";
 
-var Animation = require("./animation");
-var Map = require("./map/map");
-var CameraController = require("./controllers/cameracontroller");
+let Animation = require("./animation");
+let Map = require("./map/map");
+let MainController = require("./controllers/maincontroller");
+let Actor = require("./actor/actor");
 
 
 
 
 
+let animation = new Animation();
 
-var a = new Animation();
-
-var map = new Map();
-
-a.add_element(map);
+let map = new Map();
+animation.add_element(map);
 
 
-var c = new CameraController(a.camera);
 
-a.start();
+let actors = [new Actor(map.structure.get(20, 20))];
+animation.add_element(actors[0]);
+
+let c = new MainController(animation, map, actors);
+animation.start();
 
 
 

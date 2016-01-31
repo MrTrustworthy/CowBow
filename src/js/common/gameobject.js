@@ -1,5 +1,7 @@
 "use strict";
 
+var THREE = require("../../lib/three");
+
 // just for fun; need a git-hook or something that throws errors if it sees "getownpropertysymbols"
 var meshSymbol = Symbol();
 
@@ -12,9 +14,16 @@ class GameObject {
      * we __NEED__ to call this in all subclasses!
      */
     constructor(){
+        THREE.EventDispatcher.prototype.apply(this);
 
     }
 
+    /**
+     * Overwrite!
+     */
+    progress(){
+
+    }
 
     /**
      * returns the mesh if asked for it

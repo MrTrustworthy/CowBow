@@ -5,6 +5,8 @@ var THREE = require("../../lib/three");
 var List2D = require("../common/list2d");
 var Point = require("../common/point");
 var Structure = require("./structure");
+var Model = require("./model");
+var Path = require("./path");
 
 
 class Map extends GameObject {
@@ -22,11 +24,24 @@ class Map extends GameObject {
         this.structure = Structure.create_random(this.properties);
 
 
-        this.mesh = this._create_mesh();
-
-        window.a = this;
+        this.mesh = Model.generate_model(this.properties, this.structure);
+        this.mesh.userData = this;
 
     }
+
+
+    /**
+     * Determines the best possible path between two points
+     * @param from
+     * @param to
+     * @returns {Path|exports|module.exports}
+     */
+    get_path(from, to){
+
+        if(!from.x || !from.y || !to.x || !to.y) throw new TypeError("#Map: Need to pass two points with x/y val!");
+
+        return new Path(from, to, this.structure);
+    };
 
 
     /**
@@ -38,80 +53,12 @@ class Map extends GameObject {
             size_x: 100,
             size_y: 100,
             structure: null,
-            groundwater: -0.5
+            groundwater: -0.8,
+            mountain: 1,
+            highlight_chance: 300 // 1000 means 1 in 1000
         };
     }
 
-    _create_mesh() {
-
-
-        let geometry = new THREE.Geometry();
-
-        let width = this.structure.width;
-        let length = this.structure.length;
-
-
-        // 0: ground, 1: earth
-        let materials = new THREE.MeshFaceMaterial([
-            new THREE.MeshLambertMaterial({color: 0x00ff00}),
-            new THREE.MeshLambertMaterial({color: 0x0000ff})
-        ]);
-
-
-        // create vertices based on the structure
-        this.structure.for_each(function (node, x, y) {
-            // add the vertices for each point
-            let vert = new THREE.Vector3(node.point.x, node.point.y, node.height);
-            geometry.vertices.push(vert);
-        }.bind(this));
-
-
-        // create 2 faces for each point, excluding the points at the corners
-        this.structure.for_each(function (node, x, y) {
-
-            // no faces if we are at the right or bottom border
-            if (x === width - 1 || y === length - 1) return;
-
-            // determine which faces are above the water
-            let water = this.properties.groundwater;
-            let face1_material = this.structure.get(x, y).height <= water ? 1 : 0;
-            let face2_material = this.structure.get(x+1, y+1).height <= water ? 1 : 0;
-
-            if(this.structure.get(x+1, y).height <= water || this.structure.get(x, y+1).height <= water){
-                face1_material = face2_material = 1;
-            }
-
-
-            // add faces
-            let face1 = new THREE.Face3(
-                x + y * width,
-                x + 1 + y * width,
-                x + (y + 1) * width,
-                null,
-                null,
-                face1_material
-            );
-            let face2 = new THREE.Face3(
-                x + (y + 1) * width,
-                x + 1 + y * width,
-                x + 1 + (y + 1) * width,
-                null,
-                null,
-                face2_material
-            );
-
-            geometry.faces.push(face1, face2);
-
-
-        }.bind(this));
-
-
-        geometry.computeFaceNormals();
-        geometry.computeVertexNormals();
-        geometry.computeBoundingSphere();
-
-        return new THREE.Mesh(geometry, materials);
-    }
 
 }
 

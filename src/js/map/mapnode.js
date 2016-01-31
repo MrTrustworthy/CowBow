@@ -2,14 +2,28 @@
 
 class MapNode {
 
-    constructor(point, height, passable){
+    constructor(point, passable){
         this.point = point;
-        this.height = height;
-        this.passable = passable;
+        this.passable = passable || false;
+
+        this.__locked = false;
+    }
+
+     lock(){
+        if(this.__locked) throw new RangeError("#Mapnode: Node is already locked!");
+        this.__locked = true;
+    }
+
+    unlock(){
+        this.__locked = false;
+    }
+
+    get locked(){
+        return this.__locked;
     }
 
     toString(){
-        return `(${this.point.x}:${this.point.y}) ${this.height.toString().substring(0,3)} ${this.passable ? "o" : "x"}`;
+        return `(${this.point.x}:${this.point.y}) ${this.point.z.toString().substring(0,3)} ${this.passable ? "o" : "x"}`;
     }
 
 }
