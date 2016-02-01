@@ -8,10 +8,7 @@ var Actor = require("../actor/actor");
 var Transporter = require("../actor/transporter");
 var GameObject = require("../common/gameobject");
 var Path = require("../map/path");
-
-
-
-
+var MouseHandler = require("./mousehandler");
 
 
 class MainController {
@@ -21,69 +18,76 @@ class MainController {
         this.map = map;
         this.actors = actors;
 
-        this.selection = null;
+        this.selection = [];
 
         this.input_handler = new InputHandler(animation.camera, animation.scene);
+        this.mouse_handler = new MouseHandler(animation, map, actors);
 
-        window.onclick = this.handle_click.bind(this);
-        window.oncontextmenu = this.handle_click.bind(this);
+        this.mouse_handler.on("click", this.handle_click.bind(this));
+        this.mouse_handler.on("selection", this.handle_select.bind(this));
+        this.mouse_handler.on("rightclick", this.handle_rightclick.bind(this));
 
-
-    }
-
-    handle_click(event) {
-
-        let raycaster = new THREE.Raycaster();
-        let mouse = new THREE.Vector2();
-
-        mouse.x = ( event.clientX / this.animation.renderer.domElement.width ) * 2 - 1;
-        mouse.y = -( event.clientY / this.animation.renderer.domElement.height ) * 2 + 1;
-        raycaster.setFromCamera(mouse, this.animation.camera);
-
-        let obj = raycaster.intersectObjects(this.animation.scene.children)[0];
-
-        if (obj.object.userData instanceof Map) this.handle_map_click(obj);
-        else if (obj.object.userData instanceof Actor) this.handle_actor_click(obj);
-        else if (obj.object.userData instanceof GameObject) this.handle_object_click(obj);
-
-        // dont bubble squirtle!
-        return false;
 
     }
 
     /**
-     * Handles the click on an actor
-     * @param obj
+     *
+     * @param clicked Object{object, face, point, ...)
      */
-    handle_actor_click(obj) {
-        this.selection = obj.object.userData;
+    handle_click(clicked) {
+        console.log("#MC: click", clicked);
+
+        let obj = clicked.object;
+
+        if (obj.userData instanceof Actor) this.selection = [obj.userData];
+        else this.selection.length = 0;
+
     }
 
+    /**
+     *
+     * @param selections Array<Actor>
+     */
+    handle_select(selections) {
+        console.log("#MC: select", selections);
+        this.selection.length = 0;
+        this.selection.push.apply(this.selection, selections);
+    }
 
-    handle_map_click(obj) {
-        console.log("Map click");
+    /**
+     * If actors are selected, will send them to the target field
+     *
+     * @param clicked Object{object, face, point, ...)
+     */
+    handle_rightclick(clicked) {
+        console.log("#MC: rightclick", clicked);
 
+        if(this.selection.length === 0) return;
 
-        // determine the vertices based on the clicked face
-        let verts = [
-            obj.object.geometry.vertices[obj.face.a],
-            obj.object.geometry.vertices[obj.face.b],
-            obj.object.geometry.vertices[obj.face.c]
-        ];
-        // get the corresponding map-nodes
-        let map_nodes = verts.map(v => this.map.structure.get(v.x, v.y));
+        let geo_verts = clicked.object.geometry.vertices;
 
-        // check for passable nodes only
-        let valid = map_nodes.filter(n => n.passable);
+        this.selection.forEach( actor => {
 
-        if (valid.length === 0) throw new RangeError("#MainController: can't work with unpassable map nodes!");
+            // determine the vertices based on the clicked face
+            let verts = [
+                geo_verts[clicked.face.a],
+                geo_verts[clicked.face.b],
+                geo_verts[clicked.face.c]
+            ];
+            // get the corresponding map-nodes
+            let map_nodes = verts.map(v => this.map.structure.get(v.x, v.y));
 
-        let target = valid.pop();
+            // check for passable nodes only
+            let valid = map_nodes.filter(n => n.passable);
 
-        // move actor w
-        if (this.selection instanceof Actor) {
-            Transporter.move(this.selection, target, this.map)
-        }
+            if (valid.length === 0) throw new RangeError("#MainController: can't work with unpassable map nodes!");
+
+            let target = valid.pop();
+
+            // transporter will handle all other stuff
+            Transporter.move(actor, target, this.map)
+
+        });
 
     }
 

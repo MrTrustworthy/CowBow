@@ -58,40 +58,6 @@ var MtEventHandler = function MtEventHandler(){
         })(this.__eventlistPropertyName)
     };
 
-
-
-    this.createChannel = function(channelName){
-        if(this.__channels[channelName]) throw Error("This channel already exists!");
-
-        var channel = {};
-        var eventName = "basicChannelEvent";
-        var eventFunctions = this.__eventFunctions;
-
-        this.__defineProperty(channel, this.__eventlistPropertyName, {});
-
-        channel.listen = function(func){
-            return eventFunctions.on.call(channel, eventName, func);
-        };
-
-        channel.broadcast = function(infoObj){
-            return eventFunctions.emit.call(channel, eventName, infoObj);
-        };
-
-        channel.ignore = function(identifier){
-            return eventFunctions.ignore.call(channel, eventName, identifier);
-        };
-
-        this.__channels[channelName] = channel;
-        return channel;
-    };
-
-    this.getChannel = function(channelName){
-        if(!this.__channels[channelName]) throw Error("This channel doesn't exist!");
-        return this.__channels[channelName];
-    };
-
-
-
     this.makeEvented = function(obj){
         this.__defineProperty(obj, this.__eventlistPropertyName, {});
         this.__defineProperty(obj, "on", this.__eventFunctions.on);
@@ -101,4 +67,4 @@ var MtEventHandler = function MtEventHandler(){
 
 };
 
-if(typeof module !== "undefined" && typeof module.exports !== "undefined") module.exports = MtEventHandler;
+if(typeof module !== "undefined" && typeof module.exports !== "undefined") module.exports = new MtEventHandler();

@@ -67,7 +67,7 @@ class Animation {
         // recursive call
         requestAnimationFrame(this.start.bind(this));
         // this way we can hook tweens and stuff like that on each frame
-        this.game_objects.forEach(x => {if(x instanceof GameObject) x.progress()});
+        this.game_objects.forEach(x => {if(x instanceof GameObject) x.dispatchEvent({type: "scene_updated"})});
         this.dispatchEvent({type: "scene_updated"});
         this.renderer.render(this.scene, this.camera);
     }

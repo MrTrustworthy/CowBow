@@ -12,12 +12,13 @@ let Actor = require("./actor/actor");
 let animation = new Animation();
 
 let map = new Map();
-animation.add_element(map);
+animation.scene.add(map.mesh);
 
 
 
-let actors = [new Actor(map.structure.get(20, 20))];
+let actors = [new Actor(map.structure.get(20, 20)), new Actor(map.structure.get(30, 20))];
 animation.add_element(actors[0]);
+animation.add_element(actors[1]);
 
 let c = new MainController(animation, map, actors);
 animation.start();

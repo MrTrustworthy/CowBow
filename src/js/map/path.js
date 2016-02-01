@@ -35,11 +35,9 @@ class Path {
 
 
         // throw error if impossible
-        if(!from.passable || !to.passable){
+        if(!from.passable || !to.passable || to.locked){
             throw new EvalError("#Path: Can't determine a path because either origin or target isn't passable");
         }
-
-
 
         let current,
             surrounding = [],

@@ -16,8 +16,6 @@ class Structure {
      */
     static create_random(properties) {
 
-
-
         let l2d = new List2D(properties.size_x, properties.size_y);
 
         // fill each point with a random height
@@ -27,9 +25,7 @@ class Structure {
 
             // chance for highlight:
             if(Math.random()* properties.highlight_chance < 1) height *= 10;
-
             let point = new Point(x, y, height);
-
             let node = new MapNode(point, true);
             l2d.set(x, y, node);
 
@@ -56,7 +52,6 @@ class Structure {
         l2d.for_each(function (elem) {
             if(elem.point.z <= properties.groundwater || elem.point.z >= properties.mountain) elem.passable = false;
         });
-
 
 
         return l2d;
