@@ -16,17 +16,27 @@ class Map extends GameObject {
      * @param properties: Map with keys: size_x, size_y
      */
     constructor(properties) {
+
         super();
 
         this.properties = properties || Map._get_default_properties();
-
         // structure is a List2D filled with MapNodes
         this.structure = Structure.create_random(this.properties);
-
 
         this.mesh = Model.generate_model(this.properties, this.structure);
         this.mesh.userData = this;
 
+
+        this.resources = [];
+    }
+
+
+    /**
+     * Adds a resource to this map
+     * @param resource
+     */
+    add_resource(resource){
+        this.resources.push(resource);
     }
 
 

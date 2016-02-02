@@ -30,7 +30,12 @@ class GameObject {
      * @returns {*}
      */
     get mesh(){
-        return this[meshSymbol];
+        if (this[meshSymbol]) return this[meshSymbol];
+        else{
+            let geometry = new THREE.BoxGeometry(1, 1, 1);
+            let material = new THREE.MeshLambertMaterial({color: 0xffffff});
+            return new THREE.Mesh(geometry, material);
+        }
     }
 
     /**
