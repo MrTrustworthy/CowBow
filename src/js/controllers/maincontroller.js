@@ -1,15 +1,15 @@
 "use strict";
 
-var InputHandler = require("./inputhandler");
-var THREE = require("../../lib/three");
-var Map = require("../map/map");
-var MapNode = require("../map/mapnode");
-var Actor = require("../actor/actor");
-var Transporter = require("../actor/transporter");
-var GameObject = require("../common/gameobject");
-var Path = require("../map/path");
-var MouseHandler = require("./mousehandler");
-
+let InputHandler = require("./inputhandler");
+let THREE = require("../../lib/three");
+let Map = require("../map/map");
+let MapNode = require("../map/mapnode");
+let Actor = require("../actor/actor");
+let Taskmaster = require("../actor/taskmaster");
+let GameObject = require("../common/gameobject");
+let Path = require("../map/path");
+let MouseHandler = require("./mousehandler");
+let Point = require("../common/point");
 
 class MainController {
 
@@ -54,6 +54,35 @@ class MainController {
         this.selection.push.apply(this.selection, selections);
     }
 
+
+    /**
+     * Returns the map-node closest for a given click-event
+     *
+     * @param clicked
+     * @returns {*}
+     */
+    get_closest_node(clicked){
+
+        let point = Point.from(clicked.point);
+
+        // determine the vertices (and thereby the possible positions) based on the clicked face
+        let all_vertices = clicked.object.geometry.vertices;
+        let vertices = [
+            all_vertices[clicked.face.a],
+            all_vertices[clicked.face.b],
+            all_vertices[clicked.face.c]
+        ];
+
+        // find out which point is the closest via Point.distance_to
+        let distances = vertices.map(p =>  point.distance_to(Point.from(p)) );
+        let smallest_dist = Math.min.apply(Math, distances);
+
+        // get the closest vertice
+        let closest_point = vertices[distances.indexOf(smallest_dist)];
+        return this.map.structure.get(closest_point.x, closest_point.y);
+
+    }
+
     /**
      * If actors are selected, will send them to the target field
      *
@@ -62,32 +91,17 @@ class MainController {
     handle_rightclick(clicked) {
         console.log("#MC: rightclick", clicked);
 
+        // rightclick only does stuff when we have something selected
         if(this.selection.length === 0) return;
 
-        let geo_verts = clicked.object.geometry.vertices;
 
-        this.selection.forEach( actor => {
+        clicked = clicked.filter(evt => evt.object.userData instanceof Map)[0];
 
-            // determine the vertices based on the clicked face
-            let verts = [
-                geo_verts[clicked.face.a],
-                geo_verts[clicked.face.b],
-                geo_verts[clicked.face.c]
-            ];
-            // get the corresponding map-nodes
-            let map_nodes = verts.map(v => this.map.structure.get(v.x, v.y));
+        // get the target node
+        let target = this.get_closest_node(clicked);
 
-            // check for passable nodes only
-            let valid = map_nodes.filter(n => n.passable);
-
-            if (valid.length === 0) throw new RangeError("#MainController: can't work with unpassable map nodes!");
-
-            let target = valid.pop();
-
-            // transporter will handle all other stuff
-            Transporter.move(actor, target, this.map)
-
-        });
+        // move each actor somewhere
+        this.selection.forEach( actor => Taskmaster.send(actor, target, this.map) );
 
     }
 

@@ -7,7 +7,7 @@ var Point = require("../common/point");
 /**
  * Helper class for map structures
  */
-class Structure {
+class StructureBuilder {
 
     /**
      * Create random structure
@@ -60,4 +60,4 @@ class Structure {
 }
 
 
-module.exports = Structure;
+module.exports = StructureBuilder;

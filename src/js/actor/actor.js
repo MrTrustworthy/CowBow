@@ -15,8 +15,9 @@ class Actor extends GameObject {
     constructor(node) {
         super();
 
-        node.lock();
         this.node = node; // mapnode
+        this.node.lock(this);
+
 
         this.mesh = this.generate_model();
         this.mesh.userData = this;
@@ -79,7 +80,7 @@ class Actor extends GameObject {
         this.busy_with = def.promise;
 
         // lock target so nobody else tries to walk there
-        target.lock();
+        target.lock(this);
 
         // get the tweening points
         let points = new Tween(this.node.point, target.point, 10);

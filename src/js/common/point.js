@@ -10,6 +10,10 @@ class Point {
         this.z = z || 0;
     }
 
+    static from(vec){
+        return new Point(vec.x, vec.y, vec.z);
+    }
+
     to_vector(){
         return new THREE.Vector3(this.x, this.y, this.z);
     }

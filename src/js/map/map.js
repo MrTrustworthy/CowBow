@@ -1,13 +1,22 @@
 "use strict";
 
-var GameObject = require("../common/gameobject");
-var THREE = require("../../lib/three");
-var List2D = require("../common/list2d");
-var Point = require("../common/point");
-var Structure = require("./structure");
-var Model = require("./model");
-var Path = require("./path");
+let GameObject = require("../common/gameobject");
+let THREE = require("../../lib/three");
+let List2D = require("../common/list2d");
+let Point = require("../common/point");
+let StructureBuilder = require("./structurebuilder");
+let Model = require("./model");
+let Path = require("./path");
 
+
+let default_properties = {
+    size_x: 100,
+    size_y: 100,
+    structure: null,
+    groundwater: -0.8,
+    mountain: 1,
+    highlight_chance: 300 // 1000 means 1 in 1000
+};
 
 class Map extends GameObject {
 
@@ -19,9 +28,9 @@ class Map extends GameObject {
 
         super();
 
-        this.properties = properties || Map._get_default_properties();
+        this.properties = properties || default_properties;
         // structure is a List2D filled with MapNodes
-        this.structure = Structure.create_random(this.properties);
+        this.structure = StructureBuilder.create_random(this.properties);
 
         this.mesh = Model.generate_model(this.properties, this.structure);
         this.mesh.userData = this;
@@ -52,22 +61,6 @@ class Map extends GameObject {
 
         return new Path(from, to, this.structure);
     };
-
-
-    /**
-     * Returns default properties for when none have been provided
-     * @private
-     */
-    static _get_default_properties() {
-        return {
-            size_x: 100,
-            size_y: 100,
-            structure: null,
-            groundwater: -0.8,
-            mountain: 1,
-            highlight_chance: 300 // 1000 means 1 in 1000
-        };
-    }
 
 
 }

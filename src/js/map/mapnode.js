@@ -6,20 +6,24 @@ class MapNode {
         this.point = point;
         this.passable = passable || false;
 
-        this.__locked = false;
+        this.__lock_object = null;
     }
 
-    lock() {
-        if (this.__locked) throw new RangeError("#Mapnode: Node is already locked!");
-        this.__locked = true;
+    lock(lock_obj) {
+        if (!!this.__lock_object) throw new RangeError("#Mapnode: Node is already locked!");
+        this.__lock_object = lock_obj;
     }
 
     unlock() {
-        this.__locked = false;
+        this.__lock_object = null;
     }
 
     get locked() {
-        return this.__locked;
+        return !!this.__lock_object;
+    }
+
+    get lock_object(){
+        return this.__lock_object;
     }
 
     toString() {

@@ -11,12 +11,13 @@ class MouseHandler {
      *
      * @param animation
      * @param map
+     * @param actors
      */
     constructor(animation, map, actors) {
 
         Evented.makeEvented(this);
 
-        this.click_delay = 0.2 * 1000;
+        this.click_delay = 0.15 * 1000;
 
         this.animation = animation;
         this.map = map;
@@ -72,11 +73,12 @@ class MouseHandler {
 
         let geometry = this.selection_model.geometry;
 
-        if (!this.mousedown_obj_buffer) this.mousedown_obj_buffer = this._get_object(this.mousedown_evt);
+        // if this is the first move-action, buffer the original move coordinates to draw the selection rectangle
+        if (!this.mousedown_obj_buffer) this.mousedown_obj_buffer = this._get_object(this.mousedown_evt)[0];
 
 
         let p1 = this.mousedown_obj_buffer.point;
-        let p4 = this._get_object(evt).point;
+        let p4 = this._get_object(evt)[0].point;
         var p2, p3;
 
         // need to switch vertices in top-right and bottom-left quadrants
@@ -119,7 +121,7 @@ class MouseHandler {
         if (evt.button !== 0) return;
 
         if (this.mousedown_time + this.click_delay > Date.now()) {
-            this.emit("click", this._get_object(evt));
+            this.emit("click", this._get_object(evt)[0]);
         } else {
             this._calculate_selection();
         }
@@ -159,7 +161,7 @@ class MouseHandler {
         mouse.y = -( evt.clientY / this.animation.renderer.domElement.height ) * 2 + 1;
         raycaster.setFromCamera(mouse, this.animation.camera);
 
-        return raycaster.intersectObjects(this.animation.scene.children)[0];
+        return raycaster.intersectObjects(this.animation.scene.children);
     }
 
 
@@ -176,7 +178,9 @@ class MouseHandler {
 
         // calculate all intersecting actors
         let hits = this.actors.filter(x => {
+
             let b = new THREE.Box3().setFromObject(x.mesh);
+
             // change the actors bounding boxes to go pretty high in the Z-axis
             // so the selection model will definitely intersect it
             b.expandByVector(new THREE.Vector3(0, 0, bounding_box_height));
@@ -207,7 +211,6 @@ class MouseHandler {
         let mesh = new THREE.Mesh(geometry, material);
         mesh.visible = false;
 
-        window.m = mesh;
         return mesh;
     }
 }
