@@ -24,13 +24,13 @@ class Model {
         let mountain = properties.mountain;
 
 
-        var material = new THREE.MeshLambertMaterial({vertexColors: THREE.VertexColors});
+        let material = new THREE.MeshLambertMaterial({vertexColors: THREE.VertexColors});
 
 
         // 0: water, 1: earth, 2: mountaintop
         let vertice_colors = [
-            new THREE.Color(0x0000ff),
-            new THREE.Color(0x00ff00),
+            new THREE.Color(0x229CE4),
+            new THREE.Color(0x006400),
             new THREE.Color(0xf4a460)
         ];
 
@@ -52,6 +52,7 @@ class Model {
             if (x === width - 1 || y === length - 1) return;
 
 
+            // calculate the index of the corresponding vertices/vertix/vertixes??
             let face1_coords = {
                 a: x + y * width,
                 b: x + 1 + y * width,
@@ -75,6 +76,7 @@ class Model {
 
             //++++++++++++++
 
+            // calculate the index of the corresponding vertices/vertix/vertixes??
             let face2_coords = {
                 a: x + (y + 1) * width,
                 b: x + 1 + y * width,
