@@ -33,7 +33,7 @@ class Task {
      * @returns {*}
      */
     run(add_args) {
-        
+
         // call the function with the supplied arguments and extra values from run
         let promise = this.func({
             arguments: this.args,
@@ -86,6 +86,8 @@ class TaskList {
 
         this.state = this.STATES.STOPPED;
 
+        this.deferred = null;
+
     }
 
 
@@ -103,9 +105,11 @@ class TaskList {
      * Adds another task to the tasklist
      * @param task
      */
-    add_task(task) {
+    add_tasks(tasks) {
 
-        this.tasks.push(task);
+        tasks = Array.isArray(tasks) ? tasks : [tasks];
+
+        tasks.forEach(task => this.tasks.push(task));
 
     }
 
@@ -151,9 +155,16 @@ class TaskList {
      */
     start(additions) {
 
+        // if the thing is already running, return the current promise and warn
+        if(this.state === this.STATES.RUNNING){
+
+            return this.deferred.promise;
+
+        }
+
         this.state = this.STATES.RUNNING;
 
-        let def = new Deferred();
+        this.deferred = new Deferred();
 
 
         /**
@@ -162,31 +173,34 @@ class TaskList {
          */
         let on_next_task = function (args) {
 
-            def.update(args);
+            this.deferred.update(args);
 
             // resolve with pause notice
+
             if (this.state === this.STATES.PAUSING) {
 
                 this.state = this.STATES.STOPPED;
 
-                def.resolve(this.STATES.PAUSING);
+                this.deferred.resolve(this.STATES.PAUSING);
 
                 return;
 
             }
 
             // resolve with last value
+
             if (!this.current_task) {
 
                 this.state = this.STATES.STOPPED;
 
-                def.resolve(args);
+                this.deferred.resolve(args);
 
                 return;
 
             }
 
             // if no abort conditions are met, continue
+
             this._run_next(args).then(on_next_task, on_task_failure);
 
         }.bind(this);
@@ -197,37 +211,55 @@ class TaskList {
          */
         let on_task_failure = function (args) {
 
-            def.update(args);
+            this.deferred.update(args);
 
             this.state = this.STATES.STOPPED;
 
-            def.reject(args);
+            this.deferred.reject(args);
 
         }.bind(this);
 
         this._run_next(additions).then(on_next_task, on_task_failure);
 
-        return def.promise;
+        return this.deferred.promise;
+
     }
 
     /**
      * Pauses the execution of the tasklist at the next possible moment
+     *
+     * @returns {*}
      */
     pause() {
 
-        if (this.state === this.STATES.PAUSING || this.state == this.STATES.STOPPED) {
+        if (this.state !== this.STATES.RUNNING) {
 
             throw new EvalError("#Tasklist: Can't pause task that is already", this.state);
 
         }
 
         this.state = this.STATES.PAUSING;
+
+        return this.deferred.promise;
+
+    }
+
+    /**
+     *
+     */
+    clear(){
+
+        this.tasks = [];
+
     }
 
 
 }
 
-module.exports = TaskList;
+module.exports = {
+    TaskList: TaskList,
+    Task: Task
+};
 
 //let testTasklist = function () {
 //

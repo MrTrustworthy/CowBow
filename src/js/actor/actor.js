@@ -1,10 +1,11 @@
 "use strict";
 
-var GameObject = require("../common/gameobject");
-var THREE = require("../../lib/three");
-var Point = require("../common/point");
-var Tween = require("../common/tween");
-var Deferred = require("../../lib/mt-promise");
+let GameObject = require("../common/gameobject");
+let THREE = require("../../lib/three");
+let Point = require("../common/point");
+let Tween = require("../common/tween");
+let Deferred = require("../../lib/mt-promise");
+let TaskList = require("../common/tasklist").TaskList;
 
 class Actor extends GameObject {
 
@@ -22,12 +23,14 @@ class Actor extends GameObject {
         this.mesh = this.generate_model();
         this.mesh.userData = this;
 
+        this.task_list = new TaskList();
 
-        this.busy = false; // will be "true" if moving
-        this.busy_with = null; // promise of movement that resolves/rejects
 
-        // call this.abort() this to force cancelling the current moving after next field
-        this.__abort_request = false;
+        //this.busy = false; // will be "true" if moving
+        //this.busy_with = null; // promise of movement that resolves/rejects
+        //
+        //// call this.abort() this to force cancelling the current moving after next field
+        //this.__abort_request = false;
 
     }
 
@@ -39,84 +42,18 @@ class Actor extends GameObject {
      *
      * @returns {null|*}
      */
-    abort() {
-        let def = new Deferred();
-        this.__abort_request = true;
-
-        this.busy_with.then(
-            () => def.resolve(),
-            () => def.resolve()
-        );
-        return def.promise;
-    }
-
-
-    /**
-     * Moves to a neighbouring node
-     * @param target MAKE SURE ITS A NEIGHBOUR OR IT'LL LOOK WEIRD
-     * @returns promise that resolves when target is reaches and rejects if it's impossible
-     */
-    move_to(target) {
-        let def = new Deferred();
-
-        // guard statements
-        if (this.__abort_request || this.busy || target.locked) {
-
-            let reasons = {
-                aborted: this.__abort_request,
-                busy: this.busy,
-                locked: target.locked
-            };
-
-            // reset abortion flag
-            this.__abort_request = false;
-
-            def.reject(reasons);
-            return def.promise;
-        }
-
-        //if not, proceed
-        this.busy = true;
-        this.busy_with = def.promise;
-
-        // lock target so nobody else tries to walk there
-        target.lock(this);
-
-        // get the tweening points
-        let points = new Tween(this.node.point, target.point, 10);
-        points = Array.from(points);
-
-        // put the move-function into the current hooks
-        var update_func = function () {
-
-            let current = points.shift();
-
-            this.mesh.position.x = current.x;
-            this.mesh.position.y = current.y;
-            this.mesh.position.z = current.z;
-
-            if (points.length === 0) {
-
-                // stop moving
-                this.removeEventListener("scene_updated", update_func);
-
-                // unlock the old node and set the current node to the new position
-                this.node.unlock();
-                this.node = target;
-
-                // not busy anymore
-                this.busy = false;
-                this.busy_with = null;
-
-                def.resolve();
-            }
-        }.bind(this);
+    //abort() {
+    //    let def = new Deferred();
+    //    this.__abort_request = true;
+    //
+    //    this.busy_with.then(
+    //        () => def.resolve(),
+    //        () => def.resolve()
+    //    );
+    //    return def.promise;
+    //}
 
 
-        this.addEventListener("scene_updated", update_func);
-
-        return def.promise;
-    }
 
 
     /**
