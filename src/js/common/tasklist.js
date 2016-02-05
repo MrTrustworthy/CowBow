@@ -32,13 +32,14 @@ class Task {
      * @param add_args
      * @returns {*}
      */
-    run(add_args) {
+    run(...add_args) {
 
-        // call the function with the supplied arguments and extra values from run
-        let promise = this.func({
-            arguments: this.args,
-            additions: add_args
-        });
+        add_args = add_args || [];
+
+        // call the function with the supplied arguments and bonus arguments
+
+        let promise = this.func(...this.args, ...add_args);
+
 
         // make sure to always return a promise for consistency
         if (promise instanceof Deferred.Promise) {
@@ -90,7 +91,6 @@ class TaskList {
 
     }
 
-
     /**
      * @returns {Task|null} the currently active task
      */
@@ -115,34 +115,6 @@ class TaskList {
 
 
     /**
-     *
-     * @param val
-     * @returns {Deferred.promise}
-     * @private
-     */
-    _run_next(val) {
-
-        let def = new Deferred();
-
-        let p = this.tasks[0].run(val);
-
-        p.then((...args) => {
-
-            this.tasks.shift();
-            def.resolve(args);
-
-        }, (...args) => {
-
-            this.tasks.shift();
-            def.reject(args);
-
-        });
-
-        return def.promise;
-    }
-
-
-    /**
      * Returns a promise that behaves as following:
      *
      * resolves with value: When the tasklist has been completely empties, resolves with the value of the last promise
@@ -153,14 +125,16 @@ class TaskList {
      *
      * @returns {*}
      */
-    start(additions) {
+    start(...additions) {
 
         // if the thing is already running, return the current promise and warn
-        if(this.state === this.STATES.RUNNING){
+        if (this.state === this.STATES.RUNNING) {
 
             return this.deferred.promise;
 
         }
+
+        additions = additions || [];
 
         this.state = this.STATES.RUNNING;
 
@@ -171,9 +145,9 @@ class TaskList {
          *
          * @type {function(this:TaskList)}
          */
-        let on_next_task = function (args) {
+        let on_next_task = function (...args) {
 
-            this.deferred.update(args);
+            this.deferred.update(...args);
 
             // resolve with pause notice
 
@@ -181,7 +155,11 @@ class TaskList {
 
                 this.state = this.STATES.STOPPED;
 
-                this.deferred.resolve(this.STATES.PAUSING);
+                let buffer_deferred = this.deferred;
+
+                this.deferred = null;
+
+                buffer_deferred.resolve(this.STATES.PAUSING);
 
                 return;
 
@@ -193,7 +171,11 @@ class TaskList {
 
                 this.state = this.STATES.STOPPED;
 
-                this.deferred.resolve(args);
+                let buffer_deferred = this.deferred;
+
+                this.deferred = null;
+
+                buffer_deferred.resolve(...args);
 
                 return;
 
@@ -201,7 +183,7 @@ class TaskList {
 
             // if no abort conditions are met, continue
 
-            this._run_next(args).then(on_next_task, on_task_failure);
+            this._run_next(...args).then(on_next_task, on_task_failure);
 
         }.bind(this);
 
@@ -209,21 +191,69 @@ class TaskList {
          *
          * @type {function(this:TaskList)}
          */
-        let on_task_failure = function (args) {
+        let on_task_failure = function (...args) {
 
-            this.deferred.update(args);
+            this.deferred.update(...args);
 
             this.state = this.STATES.STOPPED;
 
-            this.deferred.reject(args);
+            let buffer_deferred = this.deferred;
+
+            this.deferred = null;
+
+            buffer_deferred.reject(...args);
 
         }.bind(this);
 
-        this._run_next(additions).then(on_next_task, on_task_failure);
+        this._run_next(...additions).then(on_next_task, on_task_failure);
 
         return this.deferred.promise;
 
     }
+
+
+    /**
+     *
+     * @param val
+     * @returns {Deferred.promise}
+     * @private
+     */
+    _run_next(...additions) {
+
+        let def = new Deferred();
+
+        additions = additions || [];
+
+        // fix error when empty tasklist gets started
+
+        if (this.tasks.length === 0) {
+
+            def.resolve();
+
+            return def.promise;
+
+        }
+
+
+        let p = this.tasks[0].run(...additions);
+
+        p.then((...args) => {
+
+            this.tasks.shift();
+
+            def.resolve(...args);
+
+        }, (...args) => {
+
+            this.tasks.shift();
+
+            def.reject(...args);
+
+        });
+
+        return def.promise;
+    }
+
 
     /**
      * Pauses the execution of the tasklist at the next possible moment
@@ -247,14 +277,40 @@ class TaskList {
     /**
      *
      */
-    clear(){
+    clear() {
 
-        this.tasks = [];
+        this.tasks.length = 0;
+
+        if(this.deferred) return this.deferred.promise;
+
+
+        let d = new Deferred();
+        d.resolve();
+        return d.promise;
 
     }
 
 
 }
+
+//if (this.state === this.STATES.RUNNING){
+//
+//    let finish = function(){
+//
+//        this.tasks.length = 0;
+//
+//        d.resolve();
+//
+//    }.bind(this);
+//
+//    this.pause().then(finish, finish);
+//
+//}else {
+//
+//
+//
+//}
+
 
 module.exports = {
     TaskList: TaskList,

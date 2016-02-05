@@ -1,5 +1,7 @@
 "use strict";
 
+let MapError = require("../common/errors").MapError;
+
 class MapNode {
 
     constructor(point, passable) {
@@ -10,7 +12,7 @@ class MapNode {
     }
 
     lock(lock_obj) {
-        if (!!this.__lock_object) throw new RangeError("#Mapnode: Node is already locked!");
+        if (!!this.__lock_object) throw new MapError("#Mapnode: Node is already locked!");
         this.__lock_object = lock_obj;
     }
 

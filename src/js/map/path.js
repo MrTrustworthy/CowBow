@@ -1,5 +1,7 @@
 "use strict";
 
+let PathError = require("../common/errors").PathError;
+
 
 /**
  * Helper class to encapsulate the distance/heuristics values
@@ -36,7 +38,7 @@ class Path {
 
         // throw error if impossible
         if(!from.passable || !to.passable || to.locked){
-            throw new EvalError("#Path: Can't determine a path because either origin or target isn't passable");
+            throw new PathError("#Path: Can't determine a path because either origin or target isn't passable");
         }
 
         let current,
@@ -77,7 +79,7 @@ class Path {
 
             current = candidates.shift();
 
-            if(!current) throw new EvalError("#Path: Can't find a path to the target!");
+            if(!current) throw new PathError("#Path: Can't find a path to the target!");
         }
 
 
