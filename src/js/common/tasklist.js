@@ -115,6 +115,7 @@ class TaskList {
 
 
     /**
+     * Is guaranteed to be async/next tick
      * Returns a promise that behaves as following:
      *
      * resolves with value: When the tasklist has been completely empties, resolves with the value of the last promise
@@ -205,7 +206,10 @@ class TaskList {
 
         }.bind(this);
 
-        this._run_next(...additions).then(on_next_task, on_task_failure);
+
+        // need to enforce async here because empty task lists would resolve immediately otherwise
+
+        process.nextTick(() => this._run_next(...additions).then(on_next_task, on_task_failure));
 
         return this.deferred.promise;
 
@@ -281,7 +285,7 @@ class TaskList {
 
         this.tasks.length = 0;
 
-        if(this.deferred) return this.deferred.promise;
+        if (this.deferred) return this.deferred.promise;
 
 
         let d = new Deferred();

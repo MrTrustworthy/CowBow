@@ -38,10 +38,7 @@ class Taskmaster {
             nodes;
 
 
-
-
-
-        actor.task_list.clear().then(()=>{
+        actor.task_list.clear().then(()=> {
 
             nodes = Taskmaster._get_clean_path(actor, target, map);
 
@@ -55,15 +52,16 @@ class Taskmaster {
 
             actor.task_list.add_tasks(tasks);
 
-            actor.task_list.start();
-            //    .then(
-            //    () => {
-            //    },
-            //    () => setTimeout(Taskmaster.move.bind(null, actor, target, map), 100)
-            //);
+            // start running the tasklist. if it fails, try again
+            // TODO FIXME need some way to limit the re-trys
+            // currently, it's only working because a new path can't be calculated so it's aborted the 2nd time
+
+            actor.task_list.start().then(
+                () => {
+                },
+                () => setTimeout(Taskmaster.move.bind(null, actor, target, map), 100)
+            );
         });
-
-
 
 
     }
