@@ -14,6 +14,8 @@ class Task {
 
     /**
      *
+     * Creates a task based on the given function, args, and context
+     *
      * @param func
      * @param args
      * @param context
@@ -22,13 +24,15 @@ class Task {
 
         this.func = !!context ? func.bind(context) : func;
 
-        this.args = Array.isArray(args) ? args : [];
+        this.args = Array.isArray(args) ? args : [args];
 
     }
 
 
     /**
      *
+     * Run a given task with all provided arguments appended on the original
+     * arguments list that is given to the function
      * @param add_args
      * @returns {*}
      */
@@ -68,7 +72,7 @@ class TaskList {
      * @returns {{RUNNING: number, PAUSING: number, STOPPED: number}}
      * @constructor
      */
-    get STATES() {
+    static get STATES() {
         return {
             RUNNING: 1,
             PAUSING: 2,
@@ -85,7 +89,7 @@ class TaskList {
 
         this.tasks = Array.isArray(tasks) ? tasks : [];
 
-        this.state = this.STATES.STOPPED;
+        this.state = TaskList.STATES.STOPPED;
 
         this.deferred = null;
 
@@ -103,7 +107,7 @@ class TaskList {
 
     /**
      * Adds another task to the tasklist
-     * @param task
+     * @param tasks
      */
     add_tasks(tasks) {
 
@@ -119,7 +123,7 @@ class TaskList {
      * Returns a promise that behaves as following:
      *
      * resolves with value: When the tasklist has been completely empties, resolves with the value of the last promise
-     * resolves with this.STATES.PAUSING: Indicates that the tasklist has been paused
+     * resolves with TaskList.STATES.PAUSING: Indicates that the tasklist has been paused
      * rejects: When a task has failed
      * updates: on every task completion, independent whether it was successful
      *
@@ -129,7 +133,7 @@ class TaskList {
     start(...additions) {
 
         // if the thing is already running, return the current promise and warn
-        if (this.state === this.STATES.RUNNING) {
+        if (this.state === TaskList.STATES.RUNNING) {
 
             return this.deferred.promise;
 
@@ -137,7 +141,7 @@ class TaskList {
 
         additions = additions || [];
 
-        this.state = this.STATES.RUNNING;
+        this.state = TaskList.STATES.RUNNING;
 
         this.deferred = new Deferred();
 
@@ -152,15 +156,15 @@ class TaskList {
 
             // resolve with pause notice
 
-            if (this.state === this.STATES.PAUSING) {
+            if (this.state === TaskList.STATES.PAUSING) {
 
-                this.state = this.STATES.STOPPED;
+                this.state = TaskList.STATES.STOPPED;
 
                 let buffer_deferred = this.deferred;
 
                 this.deferred = null;
 
-                buffer_deferred.resolve(this.STATES.PAUSING);
+                buffer_deferred.resolve(TaskList.STATES.PAUSING);
 
                 return;
 
@@ -170,7 +174,7 @@ class TaskList {
 
             if (!this.current_task) {
 
-                this.state = this.STATES.STOPPED;
+                this.state = TaskList.STATES.STOPPED;
 
                 let buffer_deferred = this.deferred;
 
@@ -196,7 +200,7 @@ class TaskList {
 
             this.deferred.update(...args);
 
-            this.state = this.STATES.STOPPED;
+            this.state = TaskList.STATES.STOPPED;
 
             let buffer_deferred = this.deferred;
 
@@ -209,6 +213,7 @@ class TaskList {
 
         // need to enforce async here because empty task lists would resolve immediately otherwise
 
+        //noinspection JSUnresolvedVariable
         process.nextTick(() => this._run_next(...additions).then(on_next_task, on_task_failure));
 
         return this.deferred.promise;
@@ -218,7 +223,7 @@ class TaskList {
 
     /**
      *
-     * @param val
+     * @param additions
      * @returns {Deferred.promise}
      * @private
      */
@@ -260,26 +265,8 @@ class TaskList {
 
 
     /**
-     * Pauses the execution of the tasklist at the next possible moment
-     *
-     * @returns {*}
-     */
-    pause() {
-
-        if (this.state !== this.STATES.RUNNING) {
-
-            throw new EvalError("#Tasklist: Can't pause task that is already", this.state);
-
-        }
-
-        this.state = this.STATES.PAUSING;
-
-        return this.deferred.promise;
-
-    }
-
-    /**
-     *
+     * Removes all tasks and returns a promise that resolves once the task has been aborted
+     * @returns {Promise} promise that is guaranteed to resolve async
      */
     clear() {
 
@@ -287,9 +274,11 @@ class TaskList {
 
         if (this.deferred) return this.deferred.promise;
 
-
         let d = new Deferred();
-        d.resolve();
+
+        //noinspection JSUnresolvedVariable
+        process.nextTick(() => d.resolve());
+
         return d.promise;
 
     }
@@ -297,70 +286,8 @@ class TaskList {
 
 }
 
-//if (this.state === this.STATES.RUNNING){
-//
-//    let finish = function(){
-//
-//        this.tasks.length = 0;
-//
-//        d.resolve();
-//
-//    }.bind(this);
-//
-//    this.pause().then(finish, finish);
-//
-//}else {
-//
-//
-//
-//}
-
 
 module.exports = {
     TaskList: TaskList,
     Task: Task
 };
-
-//let testTasklist = function () {
-//
-//    let a = [];
-//    for (let i = 0; i < 100; i++) {
-//        if(i%10 === 0){
-//            let b = (function (val) {
-//                return function (task_info) {
-//                    let prev = task_info.additions;
-//                    console.log("SPECIAL TASK", val, "and i have the add val", prev);
-//                    return "ASDASDASDASD";
-//                };
-//            })(i);
-//            a.push(b);
-//        }else {
-//            let b = (function (val) {
-//                return function (task_info) {
-//                    let d = new Deferred();
-//                    let prev = task_info.additions;
-//                    window.setTimeout(function () {
-//                        console.log("I am task number", val, "and i have the add val", prev);
-//                        d.resolve(i);
-//                    }, 20);
-//                    return d.promise;
-//                };
-//            })(i);
-//            a.push(b);
-//        }
-//    }
-//
-//    let tasks = a.map(f => new Task(f, []));
-//    let t = new TaskList(tasks);
-//    t.start("x");
-//    window.setTimeout(function(){
-//        t.pause();
-//        window.setTimeout(function(){
-//            t.start();
-//        },2000)
-//    },2000)
-//
-//};
-
-
-

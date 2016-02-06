@@ -5,6 +5,7 @@ let THREE = require("../../lib/three");
 let List2D = require("../common/list2d");
 let Point = require("../common/point");
 let StructureBuilder = require("./structurebuilder");
+let MapError = require("../common/errors").MapError;
 let Model = require("./model");
 let Path = require("./path");
 
@@ -29,14 +30,36 @@ class Map extends GameObject {
         super();
 
         this.properties = properties || default_properties;
+
         // structure is a List2D filled with MapNodes
+
         this.structure = StructureBuilder.create_random(this.properties);
 
         this.mesh = Model.generate_model(this.properties, this.structure);
+
         this.mesh.userData = this;
 
 
-        this.resources = [];
+        // generate the resources
+
+        this.resources = StructureBuilder.calculate_resources(this.structure);
+
+        // place the resources on the nodes
+        // FIXME Make sure that two resources can't overlap!
+
+        this.resources.forEach(resource => {
+
+            resource.fields.forEach(field =>{
+
+                let node = this.structure.get(field.x, field.y);
+
+                node.lock(resource);
+
+            })
+
+        })
+
+
     }
 
 

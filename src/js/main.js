@@ -13,8 +13,8 @@ let animation = new Animation();
 
 let map = new Map();
 
-let resource = new Resource();
-map.add_resource(resource);
+//let resource = new Resource();
+//map.add_resource(resource);
 
 
 

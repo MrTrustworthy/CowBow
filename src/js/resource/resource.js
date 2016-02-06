@@ -3,10 +3,6 @@
 let GameObject = require("../common/gameobject");
 let THREE = require("../../lib/three");
 
-let RES = {
-    "WOOD": 1,
-    "STONE": 2
-};
 
 let default_properties = {
     res: "WOOD",
@@ -28,12 +24,22 @@ class Resource extends GameObject {
 
         properties = properties || default_properties;
 
-        this.type = RES[properties.res];
+        this.type = Resource.RES[properties.res];
+
         this.amount = properties.amount;
+
         this.fields = properties.fields;
 
         this.mesh = this.generate_mesh();
-        //this.model = this.generate_models();
+
+    }
+
+    static get RES(){
+
+        return {
+            "WOOD": "WOOD",
+            "STONE": "STONE"
+        }
 
     }
 
@@ -63,11 +69,9 @@ class Resource extends GameObject {
     }
 
 
-    /**
-     *
-     * @param tool
-     */
-    work(tool) {
+    work_on() {
+
+        return "WOOD";
 
     }
 

@@ -18,21 +18,34 @@ class List2D {
     constructor(width, length) {
 
         this.width = this.columns = width || 1;
+
         this.length = this.rows = length || this.width;
 
         let col_array = new Array(this.length);
+
         col_array.fill(null);
 
         this[listSymbol] = [];
+
         for (let i = 0; i < this.width; i++) {
+
             this[listSymbol][i] = col_array.slice(0);
+
         }
 
     }
 
+
+    /**
+     *
+     * @param x
+     * @param y
+     * @returns {*}
+     */
     get(x, y) {
 
         return this[listSymbol][x][y];
+
     }
 
     /**
@@ -45,22 +58,52 @@ class List2D {
         let list = [];
 
         for (let xi = x - 1; xi <= x + 1; xi++) {
+
             for (let yi = y - 1; yi <= y + 1; yi++) {
 
                 if (xi === x && yi === y) continue;
+
                 if (xi < 0 || xi >= this.width || yi < 0 || yi >= this.length) continue;
 
                 let elem = this.get(xi, yi);
-                if(!elem) debugger;
+
+                if (!elem) debugger;
+
                 list.push(elem);
 
             }
+
         }
+
         return list;
+
     }
 
+    /**
+     *
+     * @returns {MapNode}
+     */
+    get_random() {
+
+        let x = Math.floor(Math.random() * this.columns),
+            y = Math.floor(Math.random() * this.rows);
+
+        return this.get(x, y);
+
+    }
+
+
+    /**
+     *
+     * @param x
+     * @param y
+     * @param value
+     * @returns {*}
+     */
     set(x, y, value) {
+
         return this[listSymbol][x][y] = value;
+
     }
 
     /**
@@ -68,18 +111,26 @@ class List2D {
      * @param callback
      */
     for_each(callback) {
+
         for (let i = 0; i < this.rows; i++) {
+
             this.get_row(i).forEach((elem, j) => callback(elem, j, i));
+
         }
+
     }
 
 
     get_row(index) {
+
         return this[listSymbol].map(sublist => sublist[index]);
+
     }
 
     get_col(index) {
+
         return this[listSymbol][index].slice(0);
+
     }
 
 
@@ -87,14 +138,23 @@ class List2D {
      * prints the list from top-left to bottom-right;
      */
     print() {
+
         let output = "";
+
         let current_row = 0;
+
         this.for_each(function (elem, x, y) {
+
             if (y > current_row) output += "\n";
+
             output += " | " + String(elem) + " | ";
+
             current_row = y;
+
         });
+
         console.log(output);
+
     }
 
 

@@ -1,11 +1,12 @@
 "use strict";
 
-var TaskList = require("../common/tasklist").TaskList;
-var Task = require("../common/tasklist").Task;
-let Tween = require("../common/tween");
+let TaskList = require("../common/tasklist").TaskList;
+let Task = require("../common/tasklist").Task;
 let Deferred = require("../../lib/mt-promise");
 let MapError = require("../common/errors").MapError;
 let PathError = require("../common/errors").PathError;
+let Resource = require("../resource/resource");
+let ActorTasks = require("./tasks");
 
 
 /**
@@ -22,8 +23,100 @@ class Taskmaster {
      */
     static send(actor, target, map) {
 
-        Taskmaster.move(actor, target, map);
+        console.log("#Obj:", target.__lock_object);
+
+        if (!target.passable) {
+
+            // can't do anything there, abort
+
+            //noinspection UnnecessaryReturnStatementJS
+            return
+
+        } else if (!target.object) {
+
+            // if no object is there, just move the actor
+
+            Taskmaster.move(actor, target, map);
+
+        } else if (target.object instanceof Resource) {
+
+            // if an object is on this field
+
+            Taskmaster.occupy(actor, target, map);
+
+        }
+
     }
+
+
+    /**
+     *
+     * @param actor
+     * @param target
+     * @param map
+     */
+    static occupy(actor, target, map) {
+
+        // step 1: find best field to go to
+
+        let surrounding = map.structure.get_surrounding(target.point.x, target.point.y);
+
+        let possible_nodes = surrounding.filter(node => node.passable && !node.locked);
+
+        // abort if target can't be reached
+
+        if(possible_nodes.length === 0){
+
+            console.warn("#Taskmaster: Can't find a way to reach this resource, doing nothing");
+
+            return;
+
+        }
+
+        // sort to find closest
+
+        possible_nodes.sort((a, b) => a.point.distance_to(actor.node.point) - b.point.distance_to(actor.node.point));
+
+        let move_target = possible_nodes[0];
+
+
+        // create tasks to move actor there
+
+        actor.task_list.clear().then(()=> {
+
+            let nodes = Taskmaster._get_clean_path(actor, move_target, map);
+
+            // create a task for each node-to-node move action required
+
+            let move_tasks = nodes.map(node => {
+
+                return new Task(ActorTasks.move_task, [node], actor);
+
+            });
+
+            actor.task_list.add_tasks(move_tasks);
+
+
+            // create task for resource gathering
+
+            let gather_task =  new Task(ActorTasks.gather_task, target.object, actor);
+
+            actor.task_list.add_tasks(gather_task);
+
+            // start running the tasklist. if it fails, try again
+            // TODO FIXME need some way to limit the re-trys
+            // currently, it's only working because a new path can't be calculated so it's aborted the 2nd time
+
+            actor.task_list.start().then(
+                () => {
+                },
+                () => setTimeout(Taskmaster.occupy.bind(null, actor, target, map), 100)
+            );
+
+        });
+
+    }
+
 
     /**
      *
@@ -33,10 +126,8 @@ class Taskmaster {
      */
     static move(actor, target, map) {
 
-
         let tasks,
             nodes;
-
 
         actor.task_list.clear().then(()=> {
 
@@ -46,7 +137,7 @@ class Taskmaster {
 
             tasks = nodes.map(node => {
 
-                return new Task(Taskmaster._actor_move_task, [node], actor);
+                return new Task(ActorTasks.move_task, [node], actor);
 
             });
 
@@ -113,74 +204,7 @@ class Taskmaster {
         return nodes;
     }
 
-    /**
-     * Moves to a neighbouring node
-     * @param target MAKE SURE ITS A NEIGHBOUR OR IT'LL LOOK WEIRD
-     * @returns promise that resolves when target is reaches and rejects if it's impossible
-     */
-    static _actor_move_task(target) {
 
-        let def = new Deferred();
-
-        try {
-
-            target.lock(this);
-
-        } catch (e) {
-
-            // if locking is not possible because something already is there, abort
-
-            if (!(e instanceof MapError)) throw e;
-
-            def.reject();
-
-            return def.promise;
-
-        }
-
-        // get the tweening points
-
-        let points = new Tween(
-            this.node.point,
-
-            target.point,
-
-            this.node.point.distance_to(target.point) * 10
-        );
-
-        points = Array.from(points);
-
-        // put the move-function into the current hooks
-        var update_func = function () {
-
-            let current = points.shift();
-
-            this.mesh.position.x = current.x;
-
-            this.mesh.position.y = current.y;
-
-            this.mesh.position.z = current.z;
-
-            if (points.length === 0) {
-
-                // stop moving
-
-                this.removeEventListener("scene_updated", update_func);
-
-                // unlock the old node and set the current node to the new position
-
-                this.node.unlock();
-
-                this.node = target;
-
-                def.resolve();
-            }
-        }.bind(this);
-
-        this.addEventListener("scene_updated", update_func);
-
-        return def.promise;
-    }
 
 
 }

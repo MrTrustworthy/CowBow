@@ -24,7 +24,7 @@ class MapNode {
         return !!this.__lock_object;
     }
 
-    get lock_object(){
+    get object(){
         return this.__lock_object;
     }
 
